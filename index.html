@@ -106,15 +106,17 @@
       longitude: selectedCoords.lng
     })
   })
-    .then((res) => {
-      if (res.ok) {
-        alert("✅ Your location has been submitted!");
-        document.getElementById("submitBtn").disabled = true;
-        document.getElementById("submitBtn").textContent = "Submitted ✅";
-      } else {
-        alert("⚠️ Submission failed. Try again.");
-      }
-    })
+    .then((res) => res.text())
+.then((text) => {
+  console.log("✅ Server response:", text);
+  if (text === "OK") {
+    alert("✅ Your location has been submitted!");
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("submitBtn").textContent = "Submitted ✅";
+  } else {
+    alert("⚠️ Submission error: " + text);
+  }
+})
     .catch((err) => {
       console.error(err);
       alert("⚠️ Error submitting location.");
