@@ -98,30 +98,31 @@
 
   // 👇 Send data to Formspree including userId
   fetch("https://script.google.com/macros/s/AKfycbyC2OOzuU_r8m_t999fkfnIKSVrbCLKcx2lDUb_B_335x7-6pHOJmG6s5qY1Dez_5pNIw/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      userId: userId,
-      latitude: selectedCoords.lat,
-      longitude: selectedCoords.lng
-    })
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    userId: userId,
+    latitude: selectedCoords?.lat,
+    longitude: selectedCoords?.lng
   })
-    .then((res) => res.text())
+})
+.then((res) => res.text())
 .then((text) => {
-  console.log("✅ Server response:", text);
-  if (text === "OK") {
+  console.log("🧠 Server response:", text);
+
+  if (text.trim() === "OK") {
     alert("✅ Your location has been submitted!");
     document.getElementById("submitBtn").disabled = true;
     document.getElementById("submitBtn").textContent = "Submitted ✅";
   } else {
-    alert("⚠️ Submission error: " + text);
+    alert("⚠️ Submission error:\n" + text);
   }
 })
-    .catch((err) => {
-      console.error(err);
-      alert("⚠️ Error submitting location.");
-    });
+.catch((err) => {
+  console.error("🚨 Network or JSON error:", err);
+  alert("❌ Network error submitting location.");
 });
+
 
   </script>
 </body>
