@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Where Are You From?</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet Search (Geocoder) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #map {
+      height: 90vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2>🌍 Show us where you're from! Use the map or search your location.</h2>
+  <div id="map"></div>
+
+  <script>
+    const map = L.map('map').setView([20, 0], 2); // default world view
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add Search Control
+    L.Control.geocoder({
+      defaultMarkGeocode: false
+    })
+    .on('markgeocode', function(e) {
+      const center = e.geocode.center;
+      map.setView(center, 8);
+      placeOrMoveMarker(center.lat, center.lng);
+    })
+    .addTo(map);
+
+    // Store one marker only
+    let currentMarker = null;
+
+    function placeOrMoveMarker(lat, lng) {
+      if (currentMarker) {
+        currentMarker.setLatLng([lat, lng]);
+      } else {
+        currentMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        currentMarker.on("dragend", () => {
+          const pos = currentMarker.getLatLng();
+          sendToFormspree(pos.lat, pos.lng);
+        });
+      }
+      sendToFormspree(lat, lng);
+    }
+
+    // On map click: move or add the marker
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      placeOrMoveMarker(lat, lng);
+    });
+
+    // Send data to Formspree
+    function sendToFormspree(lat, lng) {
+      fetch("https://formspree.io/f/xnnpeedv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude: lat, longitude: lng })
+      })
+      .then(res => {
+        if (res.ok) {
+          console.log("✅ Location submitted/updated.");
+        } else {
+          alert("⚠️ Submission failed.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("⚠️ Error submitting location.");
+      });
+    }
+  </script>
+</body>
+</html>
