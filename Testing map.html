@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Where Are You From?</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet Search (Geocoder) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #map {
+      height: 80vh;
+      width: 100%;
+    }
+    #submitBtn {
+      margin: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #submitBtn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h2>🌍 Click or search to mark where you're from</h2>
+  <div id="map"></div>
+  <button id="submitBtn" disabled>Submit Location</button>
+
+  <script>
+    const map = L.map('map').setView([20, 0], 2);
+    let selectedCoords = null;
+    let currentMarker = null;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add search control
+    L.Control.geocoder({
+      defaultMarkGeocode: false
+    })
+    .on('markgeocode', function(e) {
+      const center = e.geocode.center;
+      map.setView(center, 8);
+      placeOrMoveMarker(center.lat, center.lng);
+    })
+    .addTo(map);
+
+    // Place or move marker
+    function placeOrMoveMarker(lat, lng) {
+      selectedCoords = { lat, lng };
+      document.getElementById("submitBtn").disabled = false;
+
+      if (currentMarker) {
+        currentMarker.setLatLng([lat, lng]);
+      } else {
+        currentMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        currentMarker.on("dragend", () => {
+          const pos = currentMarker.getLatLng();
+          selectedCoords = { lat: pos.lat, lng: pos.lng };
+        });
+      }
+    }
+
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      placeOrMoveMarker(lat, lng);
+    });
+
+    // On submit
+    document.getElementById("submitBtn").addEventListener("click", function () {
+  if (!selectedCoords) return;
+
+  // 👇 Generate or retrieve unique user ID from local storage
+  let userId = localStorage.getItem("location_user_id");
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem("location_user_id", userId);
+  }
+
+  // 👇 Send data to Formspree including userId
+  fetch("https://formspree.io/f/xnnpeedv", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: userId,
+      latitude: selectedCoords.lat,
+      longitude: selectedCoords.lng
+    })
+  })
+    .then((res) => {
+      if (res.ok) {
+        alert("✅ Your location has been submitted!");
+        document.getElementById("submitBtn").disabled = true;
+        document.getElementById("submitBtn").textContent = "Submitted ✅";
+      } else {
+        alert("⚠️ Submission failed. Try again.");
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("⚠️ Error submitting location.");
+    });
+});
+
+  </script>
+</body>
+</html>
